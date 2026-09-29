@@ -1,0 +1,147 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "NileCart Customer Request Schema",
+  "description": "Structured schema for validating customer request understanding output.",
+  "type": "object",
+  "required": [
+    "language",
+    "security_flags",
+    "requests"
+  ],
+  "properties": {
+    "language": {
+      "type": "string"
+    },
+    "security_flags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "requests": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "intent",
+          "entities",
+          "problem_summary",
+          "customer_intent_text",
+          "requires_tool",
+          "requires_confirmation",
+          "missing_info",
+          "needs_clarification",
+          "clarification_question"
+        ],
+        "properties": {
+          "intent": {
+            "type": "string",
+            "enum": [
+              "order_status",
+              "delivery_eta",
+              "change_shipping_address",
+              "cancel_order",
+              "product_information",
+              "product_price",
+              "product_availability",
+              "product_variant",
+              "return_request",
+              "exchange_request",
+              "refund_status",
+              "complaint",
+              "other"
+            ]
+          },
+          "entities": {
+  "type": "object",
+  "properties": {
+    "order_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "product_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "product_name": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "size": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "color": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "address": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "customer_reference": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "refund_reference": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "delivery_reference": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  },
+  "additionalProperties": false
+},
+          "problem_summary": {
+            "type": "string"
+          },
+          "customer_intent_text": {
+            "type": "string"
+          },
+          "requires_tool": {
+            "type": "boolean"
+          },
+          "requires_confirmation": {
+            "type": "boolean"
+          },
+          "missing_info": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "needs_clarification": {
+            "type": "boolean"
+          },
+                   "clarification_question": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      }
+    }
+  }
+}
+

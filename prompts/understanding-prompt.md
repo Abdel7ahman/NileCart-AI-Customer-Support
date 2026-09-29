@@ -202,4 +202,3 @@ Follow these rules in priority order:
 8. Keep the output limited to the required JSON structure.
 9. Preserve the customer's intended meaning across languages and dialects.
 10. When a tool or external system is unavailable, report the limitation rather than guessing the result.
-

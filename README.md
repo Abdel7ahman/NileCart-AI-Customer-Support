@@ -58,7 +58,7 @@ Safety and Output Checks
 Final Customer Response
 ```
 
-The architecture separates language processing from business logic so that the LLM is not treated as the final authority for sensitive operations.
+The architecture separates language processing from business logic so that the LLM is not treated as the final authority for sensitive operations. More detail, including who is responsible for each step, is in the architecture notes.
 
 ## Prompt Engineering
 
@@ -78,9 +78,9 @@ The first prompt analyzes the customer's message and returns structured JSON ins
 
 Structured output makes the result easier to validate before any business operation is performed.
 
-### Prompt 2: Response Generation (designed, not yet published)
+### Prompt 2: Response Generation (draft v1)
 
-The second prompt is meant to generate the final customer-facing response. Its text is not published in this repository yet. It receives verified tool results and treats them as the source of truth.
+The second prompt generates the final customer-facing reply. It receives verified tool results and a status set by the application, and treats them as the source of truth. The draft is in the prompts folder.
 
 The model must not invent order status, product price, stock availability, refund status, delivery dates, product specifications, or return/cancellation eligibility. If information cannot be verified, the system should ask for the missing information, use the appropriate tool, or tell the customer the information cannot currently be verified.
 
@@ -109,7 +109,7 @@ This shows the *expected* output of Prompt 1 for one message. It is written by h
         "delivery_reference": null
       },
       "problem_summary": "Customer asks where their order is.",
-      "customer_intent_text": null,
+      "customer_intent_text": "Check order status.",
       "requires_tool": false,
       "requires_confirmation": false,
       "missing_info": ["order_id"],
@@ -167,6 +167,8 @@ The design targets these input styles:
 
 The system should preserve the customer's intended meaning rather than depend on exact wording. Ambiguous messages should not be guessed; the assistant should ask a focused clarification question.
 
+A small starter set of hand-labeled Egyptian Arabic and Arabizi messages is included as the beginning of a test set.
+
 ## Design Decisions
 
 - **Understanding is separate from execution.** The LLM only reads the message and returns structured data. Validation code and trusted tools decide what actually happens, so a wrong or manipulated model output cannot change an order by itself.
@@ -175,9 +177,9 @@ The system should preserve the customer's intended meaning rather than depend on
 
 ## Evaluation
 
-The plan is to evaluate the system on a fixed test set rather than on subjective review. Areas include intent classification, entity extraction, missing-information handling, hallucination prevention, prompt injection resistance, safe handling of sensitive actions, cross-customer data protection, tool-calling efficiency, multilingual robustness, and latency.
+The plan is to evaluate the system on a fixed test set rather than on subjective review. The evaluation plan separates what can be measured from Prompt 1's output alone (schema validity, intent and entity accuracy, flags) from what needs components that do not exist yet (authorization, tool efficiency, reply quality).
 
-Critical safety failures are treated separately from general quality metrics. The accuracy targets in the evaluation plan are proposals, not results. No evaluation has been run yet.
+Critical failures, such as invented values or a missing confirmation flag, are reported separately from general accuracy. The targets in the evaluation plan are proposals, not results. No evaluation has been run yet.
 
 ## Red Team Cases
 
@@ -186,7 +188,7 @@ The repository includes 10 hand-written adversarial and edge cases:
 1. Order status without an order ID
 2. Prompt injection combined with a legitimate request
 3. Multiple requests about different orders
-4. Arabizi with an ambiguous product variant
+4. Arabizi with a vague size question
 5. Damaged product with missing order information
 6. Cancellation request without confirmation
 7. Request about another person's order
@@ -201,28 +203,30 @@ These are written descriptions. They have not been run against a model, and they
 | Component | Status |
 |---|---|
 | Request-understanding prompt | Draft v1 |
-| Response-generation prompt | Designed, not yet published |
-| Output schema | Draft, needs tightening |
-| Tool rules | Draft |
+| Response-generation prompt | Draft v1 |
+| Output schema | Draft v1 |
+| Tool rules | Draft v1 |
 | Red-team cases (10) | Written, not yet run |
 | Evaluation plan | Plan only, no results |
 | Sample cases | Draft v1 |
-| Architecture notes | In progress |
+| Egyptian Arabic test messages | Starter set, labels need review |
+| Architecture notes | Draft v1 |
 
 ## Known Limitations
 
 - No code or running implementation yet.
 - Prompts have not been tested against a model, so there are no measured results.
-- The output schema is not strict enough yet to enforce every prompt rule.
+- The output schema does not include tool names or parameters yet.
 - Test cases are written descriptions, not yet runnable test files.
-- Egyptian Arabic and Arabizi coverage is still small.
+- The Egyptian Arabic and Arabizi test set is small.
+- Prompt 2 and the architecture notes are drafts.
 
 ## Next Steps
 
-1. Tighten the schema and make the examples consistent with it.
-2. Turn the test cases into a small runnable test file.
-3. Run the prompts on a model and record the results, including failures.
-4. Expand the Egyptian Arabic and Arabizi test messages.
+1. Turn the test cases into a small runnable test file.
+2. Run Prompt 1 on a model and record the results, including failures.
+3. Expand the Egyptian Arabic and Arabizi test messages into a labeled test set.
+4. Add tool names and parameters to the schema.
 5. Later: a small mock order database and validation code.
 
 ## Author

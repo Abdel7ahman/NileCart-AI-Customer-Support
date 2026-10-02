@@ -206,7 +206,7 @@ These are written descriptions. They have not been run against a model, and they
 | Tool rules | Draft |
 | Red-team cases (10) | Written, not yet run |
 | Evaluation plan | Plan only, no results |
-| Sample cases | In progress |
+| Sample cases | Draft v1 |
 | Architecture notes | In progress |
 
 ## Known Limitations

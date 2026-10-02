@@ -1,12 +1,12 @@
 # NileCart AI Customer Support
 
+> **Project status:** This is a simulated personal portfolio project, not a real client system or production deployment. NileCart is an invented e-commerce business, and no real customer data is used. It is a design and prompt-engineering prototype that has not been tested against a model yet, and nothing in this repository is a measured result.
+>
+> **About me:** I'm early in my prompt-engineering journey. I use AI tools to help draft the files, and I direct, review, and edit the work. My hands-on experience is in Egyptian Arabic data annotation and LLM evaluation.
+
 An LLM-based customer support system designed for an Egyptian e-commerce environment, with a focus on prompt engineering, tool calling, validation, safety, and multilingual customer messages.
 
-> **Portfolio Project:** NileCart is a simulated e-commerce environment created for this project. This repository does not use real customer data or production systems.
-
- ## Overview
-
-NileCart AI Customer Support is a portfolio project focused on designing an AI customer support system for an Egyptian e-commerce business.
+## Overview
 
 The system is designed to handle customer messages in Egyptian Arabic, Modern Standard Arabic, English, Arabizi, and mixed-language messages.
 
@@ -24,7 +24,7 @@ The main challenge is to make the LLM useful for understanding customer requests
 
 ## System Approach
 
-The system is designed as a sequence of separate stages:
+The design splits the work into separate stages:
 
 1. Understand the customer message.
 2. Extract the relevant information.
@@ -34,80 +34,99 @@ The system is designed as a sequence of separate stages:
 6. Generate a final response using verified results.
 7. Apply safety and output checks before returning the response.
 
-This approach keeps the LLM focused on language understanding while deterministic components handle validation, authorization, and business operations.
+This keeps the LLM focused on language understanding while deterministic components handle validation, authorization, and business operations.
+
+## System Architecture
+
+```text
+Customer Message
+        ↓
+Input Pre-processing
+        ↓
+LLM Request Understanding
+        ↓
+Structured Output Validation
+        ↓
+Tool Selection and Orchestration
+        ↓
+Business Rules and Authorization
+        ↓
+Response Generation
+        ↓
+Safety and Output Checks
+        ↓
+Final Customer Response
+```
+
+The architecture separates language processing from business logic so that the LLM is not treated as the final authority for sensitive operations.
 
 ## Prompt Engineering
 
-The system uses two main LLM prompts with different responsibilities.
+The design uses two LLM prompts with different responsibilities.
 
-### Prompt 1 — Request Understanding
+### Prompt 1: Request Understanding (draft v1)
 
-The first prompt is responsible for analyzing the customer's message.
-
-It extracts:
+The first prompt analyzes the customer's message and returns structured JSON instead of a natural-language answer. It extracts:
 
 - Customer intent
-- Order or product references
-- Relevant entities
+- Order or product references and other entities
 - Missing information
 - Multiple requests in the same message
 - Security-related signals
 - Whether a tool is required
 - Whether customer confirmation is required
 
-The prompt returns structured JSON instead of a natural-language answer.
+Structured output makes the result easier to validate before any business operation is performed.
 
-This makes the output easier to validate before any business operation is performed.
+### Prompt 2: Response Generation (designed, not yet published)
 
-### Prompt 2 — Response Generation
+The second prompt is meant to generate the final customer-facing response. Its text is not published in this repository yet. It receives verified tool results and treats them as the source of truth.
 
-The second prompt is responsible for generating the final customer-facing response.
+The model must not invent order status, product price, stock availability, refund status, delivery dates, product specifications, or return/cancellation eligibility. If information cannot be verified, the system should ask for the missing information, use the appropriate tool, or tell the customer the information cannot currently be verified.
 
-It receives the relevant tool results and uses them as the source of truth.
+## Example (illustrative)
 
-The model must not invent:
+This shows the *expected* output of Prompt 1 for one message. It is written by hand and is not a model output.
 
-- Order status
-- Product price
-- Stock availability
-- Refund status
-- Delivery dates
-- Product specifications
-- Return or cancellation eligibility
+**Customer message:** `عايز أعرف طلبي وصل لفين؟`
 
-If the required information cannot be verified, the system should ask for the missing information, use the appropriate tool, or clearly tell the customer that the information cannot currently be verified.
+```json
+{
+  "language": "Egyptian Arabic",
+  "security_flags": [],
+  "requests": [
+    {
+      "intent": "order_status",
+      "entities": {
+        "order_id": null,
+        "product_id": null,
+        "product_name": null,
+        "size": null,
+        "color": null,
+        "address": null,
+        "customer_reference": null,
+        "refund_reference": null,
+        "delivery_reference": null
+      },
+      "problem_summary": "Customer asks where their order is.",
+      "customer_intent_text": null,
+      "requires_tool": false,
+      "requires_confirmation": false,
+      "missing_info": ["order_id"],
+      "needs_clarification": true,
+      "clarification_question": "ممكن تبعتلي رقم الطلب؟"
+    }
+  ]
+}
+```
 
-## System Architecture
-
-The overall flow is:
-
-Customer Message  
-↓  
-Input Pre-processing  
-↓  
-LLM Request Understanding  
-↓  
-Structured Output Validation  
-↓  
-Tool Selection and Orchestration  
-↓  
-Business Rules and Authorization  
-↓  
-Response Generation  
-↓  
-Safety and Output Checks  
-↓  
-Final Customer Response
-
-The architecture separates language processing from business logic so that the LLM is not treated as the final authority for sensitive operations.
+No tool is requested because the order ID is missing.
 
 ## Tool Calling
 
-The system uses tools to retrieve trusted information and perform approved operations.
+The design uses tools to retrieve trusted information and perform approved operations.
 
-### Information Retrieval
-
-The following tools can be used to retrieve information:
+**Information retrieval:**
 
 - `get_order(order_id)`
 - `get_product(product_id)`
@@ -115,102 +134,97 @@ The following tools can be used to retrieve information:
 - `get_refund_status(order_id)`
 - `check_return_eligibility(order_id)`
 
-### Customer Actions
-
-The following tools can change order-related information:
+**Customer actions (change order data):**
 
 - `cancel_order(order_id)`
 - `update_shipping_address(order_id, address)`
 
-Tools should only be called when the required parameters are available and the request has passed the relevant validation and authorization checks.
-
-Sensitive actions require additional controls before execution.
+Tools should only be called when the required parameters are available and the request has passed validation and authorization checks. Sensitive actions require explicit customer confirmation before execution.
 
 ## Safety and Validation
 
-Safety is handled through multiple layers rather than relying on the prompt alone.
+The design handles safety through multiple layers rather than relying on the prompt alone. It is designed to:
 
-The system validates structured model output before using it, checks required parameters before calling tools, and applies authorization and business rules to sensitive operations.
+- validate structured model output before using it,
+- check required parameters before calling tools,
+- apply authorization and business rules to sensitive operations,
+- treat prompt injection attempts as untrusted customer content that cannot override system rules,
+- avoid exposing information belonging to another customer,
+- keep sensitive information out of logs and responses.
 
-For actions such as order cancellation or address updates, the system should require explicit customer confirmation before execution.
-
-Prompt injection attempts are treated as untrusted customer content and must not override system instructions or security controls.
-
-The system should also avoid exposing information belonging to another customer and should prevent sensitive information from being unnecessarily included in logs or responses.
+None of this is implemented yet; see Known Limitations.
 
 ## Multilingual Handling
 
-The system is designed to handle customer messages written in different forms of Arabic and English.
-
-Examples include:
+The design targets these input styles:
 
 - Egyptian Arabic
 - Modern Standard Arabic
 - English
 - Arabizi
 - Arabic-English mixed messages
-- Messages containing spelling mistakes or informal wording
+- Messages with spelling mistakes or informal wording
 
-The system should preserve the customer's intended meaning rather than depending on exact wording.
+The system should preserve the customer's intended meaning rather than depend on exact wording. Ambiguous messages should not be guessed; the assistant should ask a focused clarification question.
 
-Ambiguous messages should not be guessed. When important information is unclear or missing, the assistant should ask a focused clarification question.
+## Design Decisions
+
+- **Understanding is separate from execution.** The LLM only reads the message and returns structured data. Validation code and trusted tools decide what actually happens, so a wrong or manipulated model output cannot change an order by itself.
+- **Cancelling an order or changing an address needs explicit confirmation.** These actions change real data and are hard to undo, so a single message from the customer is not treated as enough.
+- **When information is missing, the model returns `null` and asks a question.** Guessing an order number or product could expose or change the wrong customer's data, so asking is the safer default.
 
 ## Evaluation
 
-The system should be evaluated using a fixed test set rather than relying only on subjective review.
+The plan is to evaluate the system on a fixed test set rather than on subjective review. Areas include intent classification, entity extraction, missing-information handling, hallucination prevention, prompt injection resistance, safe handling of sensitive actions, cross-customer data protection, tool-calling efficiency, multilingual robustness, and latency.
 
-Key evaluation areas include:
+Critical safety failures are treated separately from general quality metrics. The accuracy targets in the evaluation plan are proposals, not results. No evaluation has been run yet.
 
-- Intent classification
-- Entity extraction
-- Missing-information handling
-- Hallucination prevention
-- Prompt injection resistance
-- Safe handling of sensitive actions
-- Cross-customer data protection
-- Tool-calling efficiency
-- Multilingual robustness
-- Response latency
+## Red Team Cases
 
-Critical safety failures, such as unauthorized actions or customer-data leakage, should be treated separately from general response-quality metrics.
+The repository includes 10 hand-written adversarial and edge cases:
 
-## Red Team Testing
+1. Order status without an order ID
+2. Prompt injection combined with a legitimate request
+3. Multiple requests about different orders
+4. Arabizi with an ambiguous product variant
+5. Damaged product with missing order information
+6. Cancellation request without confirmation
+7. Request about another person's order
+8. Malformed order ID
+9. Repeated cancellation request
+10. Payment card number in the message
 
-The design includes adversarial and edge-case scenarios to test how the system behaves under difficult inputs.
-
-Examples include:
-
-1. A customer asks about an order without providing an order ID.
-2. A single message contains requests about multiple orders.
-3. A customer uses Arabizi or unclear product terminology.
-4. A customer reports a damaged product and asks for a return.
-5. A customer attempts to override the system instructions.
-6. A customer asks for information about another person's order.
-7. A malformed or unusually long order ID is provided.
-8. The same action is requested repeatedly.
-9. A customer includes sensitive payment information in a message.
-10. A tool fails or returns incomplete information.
-
-The purpose of these tests is to identify failure modes before the system is considered ready for a production implementation.
-
-## Project Structure
-
-The project is organized into separate components so that prompts, schemas, tool rules, test cases, and evaluation criteria can be developed and reviewed independently.
-
-Planned structure:
-
-- `prompts/` — LLM prompts and instructions
-- `schemas/` — structured output schemas
-- `tools/` — tool definitions and orchestration rules
-- `red-team/` — adversarial test cases
-- `evaluation/` — evaluation criteria and metrics
-- `examples/` — sample customer conversations and expected behavior
-- `architecture/` — system architecture documentation
+These are written descriptions. They have not been run against a model, and they are not yet automated tests.
 
 ## Project Status
 
-**Current stage:** System design and prompt-engineering prototype.
+| Component | Status |
+|---|---|
+| Request-understanding prompt | Draft v1 |
+| Response-generation prompt | Designed, not yet published |
+| Output schema | Draft, needs tightening |
+| Tool rules | Draft |
+| Red-team cases (10) | Written, not yet run |
+| Evaluation plan | Plan only, no results |
+| Sample cases | In progress |
+| Architecture notes | In progress |
 
-The current version focuses on the system architecture, prompt design, structured outputs, tool orchestration, safety controls, red-team scenarios, and evaluation methodology.
+## Known Limitations
 
-The next development stage is to implement the design as a working prototype with a mock e-commerce database, real validation logic, tool calling, automated tests, and an API layer.
+- No code or running implementation yet.
+- Prompts have not been tested against a model, so there are no measured results.
+- The output schema is not strict enough yet to enforce every prompt rule.
+- Test cases are written descriptions, not yet runnable test files.
+- Egyptian Arabic and Arabizi coverage is still small.
+
+## Next Steps
+
+1. Tighten the schema and make the examples consistent with it.
+2. Turn the test cases into a small runnable test file.
+3. Run the prompts on a model and record the results, including failures.
+4. Expand the Egyptian Arabic and Arabizi test messages.
+5. Later: a small mock order database and validation code.
+
+## Author
+
+Abdelrhman Hisham: Egyptian Arabic data annotation and LLM evaluation.
